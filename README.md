@@ -29,7 +29,7 @@ Follow these steps to download and run the terminal on your own machine.
 Open your terminal and download the project:
 ```bash
 git clone [https://github.com/sumadhwa28/market-terminal.git](https://github.com/sumadhwa28/market-terminal.git)
-cd market-terminal
+cd market-terminal```
 
 # Project Setup Guide
 
@@ -41,25 +41,25 @@ Isolate the project dependencies by creating a virtual environment:
 **On Windows:**
 ```bash
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate```
 
 **Mac/Linux**
 ```bash
 python3 -m venv venv
-source venv/bin/activate
+source venv/bin/activate```
 
 
 ##Install all the necessary Python libraries:
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt```
 
 ## Configure the API Key
 ```bash
-genai.configure(api_key="YOUR_GEMINI_API_KEY")
+genai.configure(api_key="YOUR_GEMINI_API_KEY")```
 
 ##Start the Server
 ```bash
-python app.py
+python app.py```
 
 
 ## Access the Application
