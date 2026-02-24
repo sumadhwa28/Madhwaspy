@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketPro Terminal</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #05080f;
+            --card-bg: #0a0f1a;
+            --border: #1f2937;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --emerald: #34d399;
+            --emerald-dark: #065f46;
+            --red: #f87171;
+            --blue: #60a5fa;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .hidden { display: none !important; }
+        .text-emerald { color: var(--emerald); }
+        .text-red { color: var(--red); }
+        .text-muted { color: var(--text-muted); }
+        .uppercase { text-transform: uppercase; }
+        .font-bold { font-weight: bold; }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background-color: rgba(31, 41, 55, 0.5);
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #000;
+            border: 1px solid var(--border);
+            color: white;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            transition: 0.2s;
+        }
+        .btn-green { background-color: var(--emerald-dark); color: var(--emerald); }
+        .btn-green:hover { background-color: #047857; }
+        .btn-red { background-color: #7f1d1d; color: var(--red); }
+        .btn-red:hover { background-color: #991b1b; }
+
+        #login-screen {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="card">
+        <h2 class="text-emerald uppercase" id="auth-title">Terminal Access</h2>
+        <form id="auth-form">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit" class="btn-green" id="auth-btn">AUTHENTICATE</button>
+        </form>
+        <p style="text-align: center; font-size: 12px; margin-top: 15px;">
+            <a href="#" class="text-muted" id="toggle-auth">Request Access (Register)</a>
+        </p>
+    </div>
+
+    <div id="dashboard-screen" class="hidden">
+        <div class="header">
+            <div>
+                <h1 class="text-emerald" style="margin: 0;">🚀 MARKETPRO TERMINAL</h1>
+                <span class="text-muted" style="font-size: 12px;">v3.0 PURE PYTHON EDITION</span>
+            </div>
+            <button class="text-muted" style="background: transparent; width: auto;" onclick="logout()">[LOGOUT]</button>
+        </div>
+
+        <div class="grid-container">
+            <div>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                        <div>
+                            <span class="text-muted font-bold" style="font-size: 12px;">LIVE PORTFOLIO VALUE</span>
+                            <h2 class="text-emerald" style="margin: 5px 0; font-size: 32px;" id="total-value">₹0.00</h2>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="text-muted font-bold" style="font-size: 12px;" id="live-time"></span><br>
+                            <span style="color: var(--emerald); background: rgba(52, 211, 153, 0.1); padding: 2px 5px; font-size: 10px; border: 1px solid var(--emerald-dark);">● LIVE SYNC</span>
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 300px; width: 100%; margin-top: 20px;">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border);">
+                        <strong class="uppercase text-muted">Asset Holdings (WAC)</strong>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ASSET</th>
+                                <th>GRAMS</th>
+                                <th>AVG COST</th>
+                                <th>UNREALIZED P/L</th>
+                                <th>ROI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolio-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <div class="card" style="border-color: var(--emerald-dark); background: #05100a;">
+                    <strong class="text-emerald uppercase mb-4" style="display: block; margin-bottom: 15px;">Execute Trade</strong>
+                    <form id="trade-form">
+                        <select id="asset-type">
+                            <option value="gold">Gold (XAU)</option>
+                            <option value="silver">Silver (XAG)</option>
+                        </select>
+                        <input type="number" id="trade-grams" step="0.001" placeholder="Quantity (Grams)" required>
+                        <div style="display: flex; gap: 10px;">
+                            <button type="button" class="btn-green" onclick="submitTrade('buy')">BUY</button>
+                            <button type="button" class="btn-red" onclick="submitTrade('sell')">SELL</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="card" id="news-container">
+                    <strong class="text-blue uppercase" style="color: var(--blue); display: block; margin-bottom: 15px;">AI Market Analysis</strong>
+                    <div id="news-content">Loading news...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let isRegistering = false;
+        let chartInstance = null;
+
+        setInterval(() => {
+            document.getElementById('live-time').innerText = new Date().toLocaleString();
+        }, 1000);
+
+        function init() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('dashboard-screen').classList.remove('hidden');
+                fetchData();
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('dashboard-screen').classList.add('hidden');
+            }
+        }
+
+        document.getElementById('toggle-auth').addEventListener('click', (e) => {
+            e.preventDefault();
+            isRegistering = !isRegistering;
+            document.getElementById('auth-title').innerText = isRegistering ? 'Initialize Account' : 'Terminal Access';
+            document.getElementById('auth-btn').innerText = isRegistering ? 'REGISTER' : 'AUTHENTICATE';
+            e.target.innerText = isRegistering ? 'Back to Login' : 'Request Access (Register)';
+        });
+
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isRegistering ? '/register' : '/login';
+
+            const res = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                init();
+            } else if (isRegistering && res.ok) {
+                alert('Success! Now log in.');
+                document.getElementById('toggle-auth').click();
+            } else {
+                alert(data.error || 'Authentication failed');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('token');
+            init();
+        }
+
+        async function fetchData() {
+            const token = localStorage.getItem('token');
+            const headers = { 'Authorization': token };
+
+            try {
+                const portRes = await fetch(`${API_BASE}/portfolio`, { headers });
+                const portfolio = await portRes.json();
+                
+                document.getElementById('total-value').innerText = `₹${portfolio.total_value.toLocaleString()}`;
+                
+                let tableHTML = '';
+                portfolio.assets.forEach(asset => {
+                    const plColor = asset.unrealized_pl >= 0 ? 'text-emerald' : 'text-red';
+                    const sign = asset.unrealized_pl >= 0 ? '+' : '';
+                    tableHTML += `
+                        <tr>
+                            <td class="uppercase font-bold">${asset.asset}</td>
+                            <td>${asset.holdings_grams}g</td>
+                            <td>₹${asset.wac}</td>
+                            <td class="${plColor}">${sign}₹${asset.unrealized_pl}</td>
+                            <td class="font-bold ${plColor}">${asset.roi_percent}%</td>
+                        </tr>
+                    `;
+                });
+                document.getElementById('portfolio-table-body').innerHTML = tableHTML;
+
+                const histRes = await fetch(`${API_BASE}/portfolio/history`, { headers });
+                const historyData = await histRes.json();
+                renderChart(historyData);
+
+                const gNews = await fetch(`${API_BASE}/news?asset=gold`).then(r => r.json());
+                const sNews = await fetch(`${API_BASE}/news?asset=silver`).then(r => r.json());
+                
+                const renderNews = (type, news) => `
+                    <div style="background: rgba(31, 41, 55, 0.3); padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span class="text-muted uppercase font-bold" style="font-size: 10px;">${type}</span>
+                            <span style="font-size: 10px; border: 1px solid var(--border); padding: 2px 4px;">${news.sentiment || 'Neutral'}</span>
+                        </div>
+                        <h4 style="margin: 0 0 5px 0; font-size: 12px;">${news.title || 'Syncing...'}</h4>
+                        <p class="text-muted" style="margin: 0; font-size: 10px; font-style: italic;">"${news.snippet || '...'}"</p>
+                    </div>
+                `;
+                document.getElementById('news-content').innerHTML = renderNews('gold', gNews) + renderNews('silver', sNews);
+
+            } catch (err) {
+                console.error("Data sync failed", err);
+            }
+        }
+
+        async function submitTrade(type) {
+            const asset_type = document.getElementById('asset-type').value;
+            const grams = parseFloat(document.getElementById('trade-grams').value);
+            if (!grams) return alert('Enter quantity');
+
+            const res = await fetch(`${API_BASE}/portfolio/add`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('token')
+                },
+                body: JSON.stringify({ asset_type, grams, type })
+            });
+
+            const result = await res.json();
+            if (res.ok) {
+                document.getElementById('trade-grams').value = '';
+                fetchData();
+            } else {
+                alert(result.error);
+            }
+        }
+
+        function renderChart(data) {
+    const ctx = document.getElementById('portfolioChart').getContext('2d');
+    const labels = data.map(d => d.date);
+    const liveValues = data.map(d => d.portfolio_value);
+    const investedValues = data.map(d => d.invested_baseline);
+
+    // Destroy the old chart completely before drawing the new one
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                { 
+                    label: 'Live Value (₹)', 
+                    data: liveValues, 
+                    borderColor: '#34d399', 
+                    borderWidth: 2, 
+                    pointRadius: 0, 
+                    tension: 0.1 
+                },
+                { 
+                    label: 'Net Invested (₹)', 
+                    data: investedValues, 
+                    borderColor: '#60a5fa', 
+                    borderWidth: 2, 
+                    borderDash: [5, 5], 
+                    pointRadius: 0, 
+                    tension: 0 
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, // Forces chart to obey the div height we set above
+            animation: {
+                duration: 500, // Smooth 0.5s transition on trade execution
+                easing: 'easeOutQuart'
+            },
+            plugins: { 
+                legend: { labels: { color: '#9ca3af', font: { family: 'monospace' } } } 
+            },
+            scales: {
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { color: '#9ca3af', font: { family: 'monospace', size: 10 } } 
+                },
+                y: { 
+                    beginAtZero: true, // Locks the bottom of the graph to 0
+                    grace: '10%', // Adds a 10% empty buffer space at the top
+                    grid: { color: '#1f2937' }, 
+                    ticks: { color: '#9ca3af', font: { family: 'monospace', size: 10 } } 
+                }
+            }
+        }
+    });
+}
+
+
+        init();
+    </script>
+</body>
+</html>
